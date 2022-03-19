@@ -1,0 +1,8 @@
+files = [
+]
+
+modules = {
+    "local" : [
+        "../modules"
+    ],
+}

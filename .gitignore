@@ -1,0 +1,15 @@
+# Synthesis
+synthesis/*
+!synthesis/Manifest.py
+
+# Simulation
+simulation/*
+!simulation/Manifest.py
+!simulation/*py
+*.cf
+*.o
+
+# Misc
+Makefile
+.vscode
+__pycache__
