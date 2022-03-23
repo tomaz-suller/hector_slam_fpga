@@ -203,33 +203,71 @@ def measument_adjust(xi, S, M):
         H_acc += H
         dTr_acc += dTr
     delta = np.linalg.inv(H_acc) @ dTr
-    return delta
+    return np.array([delta[0], delta[1], delta[2]])
+
+def scan_match(xi_estimation, S, M):
+    pose = xi_estimation
+    n = len(S)
+    sinRot = np.sin(pose[2])
+    cosRot = np.cos(pose[2])
+    H = np.zeros((3, 3))
+    dTr = np.zeros((3, 1))
+    for i in range(n):
+        M_p = M_si_xi(pose, S[i], M)
+        dM = dM_si_xi(pose, S[i], M)
+        dx, dy = dM[0]
+        curPoint = S[i] * 1/ENV_MAP_SCALE
+        funVal = 1. - M_p
+        dTr[0] += dx * funVal
+        dTr[1] += dy * funVal
+        dphi = ((-sinRot*curPoint[0] - cosRot*curPoint[1]) * dx +
+                (cosRot*curPoint[0] - sinRot*curPoint[1]) * dy)
+        dTr[2] += dphi * funVal
+        H[0, 0] += dx**2
+        H[0, 1] += dx * dy
+        H[0, 2] += dx * dphi
+        H[1, 1] += dy**2
+        H[1, 2] += dy * dphi
+        H[2, 2] += dphi**2
+    
+    H[1, 0] = H[0, 1]
+    H[2, 0] = H[0, 2]
+    H[2, 1] = H[1, 2]
+
+    if H[0, 0] != 0. and H[1, 1] != 0. and H[2, 2] != 0.:
+        delta_pose = np.matmul(np.linalg.inv(H), dTr)
+        r = 1/ENV_MAP_SCALE
+        delta_pose[2, 0] = min(delta_pose[2, 0], 0.2)
+        delta_pose[2, 0] = max(delta_pose[2, 0], -0.2)
+        return np.array([delta_pose[0,0] / r, delta_pose[1,0] / r, delta_pose[2, 0]])
+    else:
+        return np.zeros(3)
 
 def main():
-    env_img = plt.imread("software_simulation/maze.png")
+    env_img = plt.imread("software_simulation/'-'.png")
     env_img = env_img[:, :, :3] # remove alpha channel
     env = 0.9 < np.linalg.norm(env_img, axis=2)
     env_shape = env.shape
     M = np.zeros((env_shape[0]//ENV_MAP_SCALE, env_shape[1]//ENV_MAP_SCALE))
     xi = np.array([256, 256, 0.0]) # pos_x, pos_y, θ
-    xi_moves = [np.array([2, 0, 0]),
-                np.array([0, 2, 0]),
-                np.array([1, 3, 0]),
-                np.array([2, 3, 0]),
-                np.array([2, 3, 0]),
-                np.array([2, 3, 0]),]
+    xi_moves = [np.array([15, 5, 0]),
+                np.array([5, 10, 0]),
+                np.array([10, -5, 0]),
+                np.array([20, 10, 0]),
+                ]
 
     S = lidar(xi, env, 720, use_inf=False)
     update_map(xi, S, M)
     draw_map(M)
-    plt.show()
+    # plt.show()
     xi_estimation = np.copy(xi)
     for move in xi_moves:
         xi += move
         S = lidar(xi, env, 720, use_inf=False)
         for _ in range(10):
-            delta_xi_estimation = measument_adjust(xi_estimation, S, M).reshape(-1)
+            delta_xi_estimation = scan_match(xi_estimation, S, M).reshape(-1)
             xi_estimation += delta_xi_estimation
+        print(move/delta_xi_estimation)
         update_map(xi_estimation, S, M)
         # draw_lidar(xi, S, env, draw_env=False)
         draw_map(M)
