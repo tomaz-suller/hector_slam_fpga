@@ -64,17 +64,16 @@ def unreduce_octan_cell(cell_pos, y_flip, x_flip, id_flip):
     return np.array([px, py])
 
 def bresenham_polar(rho, theta):
-    rho_cell = rho//ENV_MAP_SCALE
     reduced_theta, y_flip, x_flip, id_flip = reduce_octant_arg(theta)
     raw_cells = [(x, round(x*tan(reduced_theta)))
-                  for x in range(0, round(rho_cell*cos(reduced_theta)) + 1)]
+                  for x in range(0, round(rho*cos(reduced_theta)) + 1)]
     cells = [unreduce_octan_cell(cell, y_flip, x_flip, id_flip) for cell in raw_cells]
 
     return cells
 
 
 def polar2rectangular(rho, theta):
-    return rho*cos(), rho*sin(theta)
+    return rho*cos(theta), rho*sin(theta)
 
 def translate(origin, point):
     return origin + point
@@ -121,7 +120,7 @@ def update_map(xi, S, M):
     FREE_FACTOR = 0.4
     OCCUPIED_FACTOR = 0.6
 
-    absolute_cell = xi[:2].astype(int)//ENV_MAP_SCALE
+    absolute_cell = xi[:2].astype(int)
     for si in S:
         cells = []
         relative_cells = bresenham_polar(*si)
@@ -138,8 +137,7 @@ def draw_map(M):
     CHECK_VALUE = 2
     imshow(-M.T, vmin=-CHECK_VALUE, vmax=CHECK_VALUE)
 
-def map_interpolation(x_pixel, y_pixel, M):
-    x, y = x_pixel/ENV_MAP_SCALE, y_pixel/ENV_MAP_SCALE
+def map_interpolation(x, y, M):
     x0, x1 = math.floor(x), math.ceil(x)
     y0, y1 = math.floor(y), math.ceil(y)
     M00 = logodds2prob(M[x0, y0])
@@ -149,8 +147,7 @@ def map_interpolation(x_pixel, y_pixel, M):
 
     return (y-y0)*((x-x0)*M11 + (x1-x)*M01) + (y1-y)*((x-x0)*M10 + (x1-x)*M00)
 
-def map_interpolation_derivative(x_pixel, y_pixel, M):
-    x, y = x_pixel/ENV_MAP_SCALE, y_pixel/ENV_MAP_SCALE
+def map_interpolation_derivative(x, y, M):
     x0, x1 = math.floor(x), math.ceil(x)
     y0, y1 = math.floor(y), math.ceil(y)
     M00 = logodds2prob(M[x0, y0])
@@ -216,7 +213,7 @@ def scan_match(xi_estimation, S, M):
         M_p = M_si_xi(pose, S[i], M)
         dM = dM_si_xi(pose, S[i], M)
         dx, dy = dM[0]
-        curPoint = S[i] * 1/ENV_MAP_SCALE
+        curPoint = S[i]
         funVal = 1. - M_p
         dTr[0] += dx * funVal
         dTr[1] += dy * funVal
@@ -236,12 +233,17 @@ def scan_match(xi_estimation, S, M):
 
     if H[0, 0] != 0. and H[1, 1] != 0. and H[2, 2] != 0.:
         delta_pose = np.matmul(np.linalg.inv(H), dTr)
-        r = 1/ENV_MAP_SCALE
         delta_pose[2, 0] = min(delta_pose[2, 0], 0.2)
         delta_pose[2, 0] = max(delta_pose[2, 0], -0.2)
-        return np.array([delta_pose[0,0] / r, delta_pose[1,0] / r, delta_pose[2, 0]])
+        return np.array([map2world(delta_pose[0,0]), map2world(delta_pose[1,0]), delta_pose[2, 0]])
     else:
         return np.zeros(3)
+
+def world2map(p):
+    return p/ENV_MAP_SCALE
+    
+def map2world(p):
+    return p*ENV_MAP_SCALE
 
 def main():
     env_img = plt.imread("software_simulation/'-'.png")
@@ -257,18 +259,23 @@ def main():
                 ]
 
     S = lidar(xi, env, 720, use_inf=False)
-    update_map(xi, S, M)
+    S_map = [np.array([world2map(si[0]), si[1]]) for si in S]
+    xi_map = np.array([world2map(xi[0]), world2map(xi[1]), xi[2]])   
+    update_map(xi_map, S_map, M)
     draw_map(M)
-    # plt.show()
+    plt.show()
+
     xi_estimation = np.copy(xi)
     for move in xi_moves:
         xi += move
         S = lidar(xi, env, 720, use_inf=False)
-        for _ in range(10):
-            delta_xi_estimation = scan_match(xi_estimation, S, M).reshape(-1)
-            xi_estimation += delta_xi_estimation
-        print(move/delta_xi_estimation)
-        update_map(xi_estimation, S, M)
+        S_map = [np.array([world2map(si[0]), si[1]]) for si in S]
+        # for _ in range(10):
+        #     xi_map_estimation = np.array([world2map(xi_estimation[0]), world2map(xi_estimation[1]), xi_estimation[2]])
+        #     delta_xi_estimation = scan_match(xi_map_estimation, S_map, M).reshape(-1)
+        #     xi_estimation += delta_xi_estimation
+        # print(move/delta_xi_estimation)
+        update_map(xi, S_map, M)
         # draw_lidar(xi, S, env, draw_env=False)
         draw_map(M)
         plt.show()
