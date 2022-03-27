@@ -4,7 +4,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Iterable
 
-
 @dataclass
 class BinaryFixedPoint:
     whole_bits: int = 16
@@ -54,11 +53,36 @@ class BinaryFixedPoint:
         return self._from_iterator(reversed(new_value_list))
 
     def __mul__(self, other: BinaryFixedPoint) -> BinaryFixedPoint:
-        result = self._from_iterator(self.width*['0'])
+        if self._value[-1] == '1' or other._value[-1] == '1':
+            raise ArithmeticError('Multiplication of negative numbers is not supported')
+
+        def fill_to_double_width(value: str) -> BinaryFixedPoint:
+            double_width = 2*self.width
+            filled_value = (double_width - len(value))*'0' + value
+            filled_binary = BinaryFixedPoint(whole_bits=double_width-self.fraction_bits,
+                                             fraction_bits=self.fraction_bits)
+            filled_binary.value = filled_value
+            return filled_binary
+
+        # tmp_result must have twice as many bits as operands
+        # to avoid overflow during addition
+        tmp_result = fill_to_double_width('0')
+        # tmp_other follows to allow addition
+        tmp_other = fill_to_double_width(other.value)
+
         for i, bit in enumerate(self._value):
             if bit == '1':
-                result = result + (other << i)
-        return result >> self.fraction_bits
+                tmp_result = tmp_result + (tmp_other << i)
+
+        # Result shifted back to correct point position
+        tmp_result = tmp_result >> self.fraction_bits
+        # The sign bit or those after it are non-zero iff overflow happened
+        if '1' in tmp_result._value[self.width-1:]:
+            raise ArithmeticError(f'Overflow occured when multiplying {self} and {other}')
+
+        # Remove bits after self.width -- they are all be zero
+        result = self._from_iterator(reversed(tmp_result._value[:self.width]))
+        return result
 
     def __invert__(self) -> BinaryFixedPoint:
         new_bit_list = []
@@ -86,6 +110,9 @@ class BinaryFixedPoint:
         return self._from_iterator(self.value[other:] +other*'0')
 
     def _from_iterator(self, iterator: Iterable[str]) -> BinaryFixedPoint:
+        """Return a BinaryFixedPoint instance with the same
+        number of whole and fractional bits as self and value
+        set by the iterator."""
         return BinaryFixedPoint.from_iterator(iterator,
                                               whole_bits=self.whole_bits,
                                               fraction_bits=self.fraction_bits)
@@ -143,15 +170,16 @@ if __name__ == '__main__':
     print(test_one-six >> 1)
 
     print('\n')
-    actual_one = BinaryFixedPoint.from_bit_vector('000000010000', # 1
-                                                  whole_bits=8,
+    actual_one = BinaryFixedPoint.from_bit_vector('00010000', # 1
+                                                  whole_bits=4,
                                                   fraction_bits=4)
-    actual_one_half = BinaryFixedPoint.from_bit_vector('000000001000', # 0.5
-                                                       whole_bits=8,
+    actual_one_half = BinaryFixedPoint.from_bit_vector('00001000', # 0.5
+                                                       whole_bits=4,
                                                        fraction_bits=4)
-    actual_three = BinaryFixedPoint.from_bit_vector('0000000000110000', # 3
-                                                    whole_bits=12,
+    actual_three = BinaryFixedPoint.from_bit_vector('00110000', # 3
+                                                    whole_bits=4,
                                                     fraction_bits=4)
 
     print(actual_one * actual_one_half)
+    # ArithmeticError expected: trying to fit 9 into a 4-bit signed number
     print(actual_three * actual_three)
