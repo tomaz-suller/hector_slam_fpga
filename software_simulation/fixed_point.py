@@ -164,6 +164,11 @@ class BinaryFixedPoint:
         obj.value = float_to_binary(value)
         return obj
 
+    def to_float(self) -> float:
+        whole_value = int(self.value[:self.whole_bits], 2)
+        fractional_value = int(self.value[self.whole_bits:], 2)
+        return whole_value + fractional_value/2**self.fraction_bits
+
 if __name__ == '__main__':
     test_vector = ['1']*5 + ['0']*20 + ['1']*7
     test_obj = BinaryFixedPoint.from_iterator(test_vector)
@@ -222,3 +227,10 @@ if __name__ == '__main__':
     print(BinaryFixedPoint.from_float(1.5))
     print(BinaryFixedPoint.from_float(2.5))
     print(BinaryFixedPoint.from_float(math.pi))
+
+    print('\n')
+    bfp_pi = BinaryFixedPoint.from_float(math.pi,
+                                         whole_bits=14,
+                                         fraction_bits=18)
+    print(bfp_pi)
+    print(bfp_pi.to_float())
