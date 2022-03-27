@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import math
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Iterable
+
+def fill_to_width(value: str, width: int) -> str:
+    """Fill the given value to the given width with zeros."""
+    return value.zfill(width)
 
 @dataclass
 class BinaryFixedPoint:
@@ -58,7 +63,7 @@ class BinaryFixedPoint:
 
         def fill_to_double_width(value: str) -> BinaryFixedPoint:
             double_width = 2*self.width
-            filled_value = (double_width - len(value))*'0' + value
+            filled_value = fill_to_width(value, double_width)
             filled_binary = BinaryFixedPoint(whole_bits=double_width-self.fraction_bits,
                                              fraction_bits=self.fraction_bits)
             filled_binary.value = filled_value
@@ -133,6 +138,31 @@ class BinaryFixedPoint:
         obj.value = bit_vector
         return obj
 
+    @staticmethod
+    def from_float(value: float,
+                   whole_bits: int = 16,
+                   fraction_bits: int = 16) -> BinaryFixedPoint:
+        """Return a BinaryFixedPoint instance with the given
+        number of whole and fractional bits and value set by
+        the given float."""
+
+        def binary_digits(value: int) -> str:
+            return bin(value)[2:]
+
+        def float_to_binary(value: float) -> str:
+            """Return a binary string representation of the given float."""
+            whole_value = math.floor(value)
+            fractional_value = value - whole_value
+            truncated_fractional_value = math.floor(fractional_value * (2**fraction_bits))
+            binary_whole_value = fill_to_width(binary_digits(whole_value),
+                                               whole_bits)
+            binary_fractional_value = fill_to_width(binary_digits(truncated_fractional_value),
+                                                    fraction_bits)
+            return binary_whole_value + binary_fractional_value
+
+        obj = BinaryFixedPoint(whole_bits, fraction_bits)
+        obj.value = float_to_binary(value)
+        return obj
 
 if __name__ == '__main__':
     test_vector = ['1']*5 + ['0']*20 + ['1']*7
@@ -181,5 +211,14 @@ if __name__ == '__main__':
                                                     fraction_bits=4)
 
     print(actual_one * actual_one_half)
+
     # ArithmeticError expected: trying to fit 9 into a 4-bit signed number
-    print(actual_three * actual_three)
+    try:
+        print(actual_three * actual_three)
+    except ArithmeticError as e:
+        print(e)
+
+    print(BinaryFixedPoint.from_float(0.5))
+    print(BinaryFixedPoint.from_float(1.5))
+    print(BinaryFixedPoint.from_float(2.5))
+    print(BinaryFixedPoint.from_float(math.pi))
