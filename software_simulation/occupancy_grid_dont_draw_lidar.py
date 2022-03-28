@@ -10,8 +10,7 @@ from fixed_point import BinaryFixedPoint
 RIGHT_SHIFTS_WORLD_TO_MAP = 2 # Divide by 4
 LEFT_SHIFTS_MAP_TO_WORLD = RIGHT_SHIFTS_WORLD_TO_MAP
 MAP_CELLS_PER_WORLD_CELL = 2**RIGHT_SHIFTS_WORLD_TO_MAP
-FREE_FACTOR = 0.4
-OCCUPIED_FACTOR = 0.6
+PROBABILITY_UPDATE_FACTOR = 0.6
 # Constants
 BINARY_PI = BinaryFixedPoint.from_numeric(np.pi)
 ZERO = BinaryFixedPoint.from_numeric(0)
@@ -42,14 +41,20 @@ def main():
                  numeric_iter_to_binary([10, -5, 0.0]),
                  numeric_iter_to_binary([20, 10, 0.0])]
 
-    for movement in movements:
-        for i, movement_coordinate in enumerate(movement):
-            current_position[i] = current_position[i] + movement_coordinate
-        relative_lidar_scans = lidar(current_position, environment, 720)
-        current_map_position = world_to_map(current_position)
-        update_grid(current_map_position, relative_lidar_scans, occupancy_grid)
-        draw_grid(occupancy_grid)
+    try:
+        for movement in movements:
+            for i, movement_coordinate in enumerate(movement):
+                current_position[i] = current_position[i] + movement_coordinate
+            relative_lidar_scans = lidar(current_position, environment, 720)
+            current_map_position = world_to_map(current_position)
+            update_grid(current_map_position, relative_lidar_scans, occupancy_grid)
+        draw_grid(occupancy_grid,
+                  fix_scale=True,
+                  xlim=[150, 385],
+                  ylim=[140, 325])
         plt.show()
+    except KeyboardInterrupt:
+        return
 
 def lidar(current_position: list[BinaryFixedPoint],
           environment: np.ndarray,
@@ -84,9 +89,9 @@ def update_grid(current_position: list[BinaryFixedPoint],
             x_index = (origin_x + relative_x).to_int()
             y_index = (origin_y + relative_y).to_int()
             if i == len(relative_cells)-1: # Only the last cell is occupied
-                grid[y_index, x_index] += prob_to_logodds(OCCUPIED_FACTOR)
+                grid[y_index, x_index] += 1
             else:
-                grid[y_index, x_index] += prob_to_logodds(FREE_FACTOR)
+                grid[y_index, x_index] -= 1
 
 def bresenham_polar(rho: BinaryFixedPoint, theta:BinaryFixedPoint) -> list[list[BinaryFixedPoint]]:
     reduced_theta, y_flip, x_flip, id_flip = reduce_octant_angle(theta)
@@ -139,9 +144,34 @@ def unreduce_cell(cell: list[BinaryFixedPoint],
 
     return [x, y]
 
-def draw_grid(grid: np.ndarray) -> None:
-    CHECK_VALUE = 2
-    imshow(-grid.T, vmin=-CHECK_VALUE, vmax=CHECK_VALUE)
+def draw_grid(grid: np.ndarray,
+              fix_scale: bool = False,
+              xlim: list[int] = None,
+              ylim: list[int] = None,) -> None:
+    vmin, vmax = None, None
+    if fix_scale:
+        vmin, vmax = -1, 1
+    cell_to_probability = lambda x: prob_to_logodds(PROBABILITY_UPDATE_FACTOR) * x
+    grid_to_probability = np.vectorize(cell_to_probability)
+    probability_grid = grid_to_probability(grid)
+    # pylint: disable=invalid-unary-operand-type
+    cropped_probability_grid = crop_array(probability_grid, xlim, ylim)
+    imshow(-cropped_probability_grid, vmin, vmax)
+
+def crop_array(array: np.ndarray,
+               xlim: list[int],
+               ylim: list[int]) -> np.ndarray:
+    return array[ylim[0]:ylim[1], xlim[0]:xlim[1]]
+
+def imshow(arr: np.ndarray,
+           vmin: int | float = None,
+           vmax: int | float = None) -> None:
+
+    if vmin is None:
+        vmin = np.min(arr)
+    if vmax is None:
+        np.max(arr)
+    return plt.imshow(arr, cmap='gray', vmin=vmin, vmax=vmax)
 
 def world_to_map(point: list[BinaryFixedPoint]) -> list[BinaryFixedPoint]:
     return [
@@ -173,13 +203,6 @@ def numeric_iter_to_binary(numeric_iterable: Iterable[Any]) -> list[BinaryFixedP
 
 def numeric_to_binary(numeric) -> BinaryFixedPoint:
     return BinaryFixedPoint.from_numeric(numeric)
-
-def imshow(arr, vmin=None, vmax=None):
-    if vmin is None:
-        vmin = np.min(arr)
-    if vmax is None:
-        np.max(arr)
-    return plt.imshow(arr, cmap='gray', vmin=vmin, vmax=vmax)
 
 if __name__ == '__main__':
     main()
