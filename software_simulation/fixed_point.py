@@ -1,18 +1,22 @@
 from __future__ import annotations
-
 import math
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Iterable
 
+DEFAULT_WHOLE_BITS = 14
+DEFAULT_FRACTION_BITS = 18
+
 def fill_to_width(value: str, width: int) -> str:
-    """Fill the given value to the given width with zeros."""
+    """Pad value on the left with zeros to reach width."""
+    if width - len(value) < 0:
+        raise ValueError(f"Value with length {len(value)} is too long for width {width}")
     return value.zfill(width)
 
 @dataclass
 class BinaryFixedPoint:
-    whole_bits: int = 16
-    fraction_bits: int = 16
+    whole_bits: int = DEFAULT_WHOLE_BITS
+    fraction_bits: int = DEFAULT_FRACTION_BITS
     _value: str = None
 
     def __post_init__(self) -> None:
@@ -64,9 +68,10 @@ class BinaryFixedPoint:
         def fill_to_double_width(value: str) -> BinaryFixedPoint:
             double_width = 2*self.width
             filled_value = fill_to_width(value, double_width)
-            filled_binary = BinaryFixedPoint(whole_bits=double_width-self.fraction_bits,
-                                             fraction_bits=self.fraction_bits)
-            filled_binary.value = filled_value
+            filled_binary = BinaryFixedPoint.from_bit_vector(
+                filled_value,
+                whole_bits=double_width-self.fraction_bits,
+                fraction_bits=self.fraction_bits)
             return filled_binary
 
         # tmp_result must have twice as many bits as operands
@@ -89,16 +94,17 @@ class BinaryFixedPoint:
         result = self._from_iterator(reversed(tmp_result._value[:self.width]))
         return result
 
-    def __invert__(self) -> BinaryFixedPoint:
+    def __invert__(self) -> BinaryFixedPoint: # Python ~ operator does not turn 0 into by default 1
         new_bit_list = []
         for bit in self.value:
-            new_bit = '0' if bit == '1' else '1' # Python ~ operator does not turn 0 into 1
+            new_bit = '0' if bit == '1' else '1'
             new_bit_list.append(new_bit)
         return self._from_iterator(new_bit_list)
 
     def __neg__(self) -> BinaryFixedPoint:
-        one = BinaryFixedPoint(self.whole_bits, self.fraction_bits)
-        one.value = ['0']*(self.width-1) + ['1']
+        one = BinaryFixedPoint.from_bit_vector(
+            ['0']*(self.width-1) + ['1'],
+            self.whole_bits, self.fraction_bits)
         return ~self + one
 
     def __sub__(self, other: BinaryFixedPoint) -> BinaryFixedPoint:
@@ -114,6 +120,22 @@ class BinaryFixedPoint:
             return deepcopy(self)
         return self._from_iterator(self.value[other:] +other*'0')
 
+    # TODO Simulate arithmetic comparison as in hardware
+    def __gt__(self, other: BinaryFixedPoint) -> bool:
+        return self.to_float() > other.to_float()
+
+    def __lt__(self, other: BinaryFixedPoint) -> bool:
+        return self.to_float() < other.to_float()
+
+    def __ge__(self, other: BinaryFixedPoint) -> bool:
+        return self.to_float() >= other.to_float()
+
+    def __le__(self, other: BinaryFixedPoint) -> bool:
+        return self.to_float() <= other.to_float()
+
+    def __eq__(self, other: BinaryFixedPoint) -> bool:
+        return self.to_float() == other.to_float()
+
     def _from_iterator(self, iterator: Iterable[str]) -> BinaryFixedPoint:
         """Return a BinaryFixedPoint instance with the same
         number of whole and fractional bits as self and value
@@ -124,33 +146,29 @@ class BinaryFixedPoint:
 
     @staticmethod
     def from_iterator(iterator: Iterable[str],
-                      whole_bits: int = 16,
-                      fraction_bits: int = 16) -> BinaryFixedPoint:
+                      whole_bits: int = DEFAULT_WHOLE_BITS,
+                      fraction_bits: int = DEFAULT_FRACTION_BITS) -> BinaryFixedPoint:
         bit_vector = ''.join(iterator)
         return BinaryFixedPoint.from_bit_vector(bit_vector,
                                                 whole_bits, fraction_bits)
 
     @staticmethod
     def from_bit_vector(bit_vector: str,
-                        whole_bits: int = 16,
-                        fraction_bits: int = 16) -> BinaryFixedPoint:
+                        whole_bits: int = DEFAULT_WHOLE_BITS,
+                        fraction_bits: int = DEFAULT_FRACTION_BITS) -> BinaryFixedPoint:
         obj = BinaryFixedPoint(whole_bits, fraction_bits)
         obj.value = bit_vector
         return obj
 
     @staticmethod
-    def from_float(value: float,
-                   whole_bits: int = 16,
-                   fraction_bits: int = 16) -> BinaryFixedPoint:
-        """Return a BinaryFixedPoint instance with the given
-        number of whole and fractional bits and value set by
-        the given float."""
+    def from_numeric(value: int | float,
+                     whole_bits: int = DEFAULT_WHOLE_BITS,
+                     fraction_bits: int = DEFAULT_FRACTION_BITS) -> BinaryFixedPoint:
 
         def binary_digits(value: int) -> str:
             return bin(value)[2:]
 
-        def float_to_binary(value: float) -> str:
-            """Return a binary string representation of the given float."""
+        def numeric_to_binary(value: int | float) -> str:
             whole_value = math.floor(value)
             fractional_value = value - whole_value
             truncated_fractional_value = math.floor(fractional_value * (2**fraction_bits))
@@ -160,14 +178,32 @@ class BinaryFixedPoint:
                                                     fraction_bits)
             return binary_whole_value + binary_fractional_value
 
-        obj = BinaryFixedPoint(whole_bits, fraction_bits)
-        obj.value = float_to_binary(value)
+        obj = BinaryFixedPoint.from_bit_vector(
+            numeric_to_binary(abs(value)),
+            whole_bits, fraction_bits)
+        if value < 0:
+            return -obj
         return obj
 
     def to_float(self) -> float:
-        whole_value = int(self.value[:self.whole_bits], 2)
-        fractional_value = int(self.value[self.whole_bits:], 2)
-        return whole_value + fractional_value/2**self.fraction_bits
+        if self._value[-1] == '1':
+            return -BinaryFixedPoint.__to_float(-self)
+        return BinaryFixedPoint.__to_float(self)
+
+    @staticmethod
+    def __to_float(binary: BinaryFixedPoint) -> float:
+        whole_value = int(binary.value[:binary.whole_bits], 2)
+        fractional_value = int(binary.value[binary.whole_bits:], 2)
+        return whole_value + fractional_value/2**binary.fraction_bits
+
+    def to_int(self) -> int:
+        return math.floor(self.to_float())
+
+    @staticmethod
+    def truncate(value: int | float,
+                 whole_bits: int = DEFAULT_WHOLE_BITS,
+                 fraction_bits: int = DEFAULT_FRACTION_BITS) -> float:
+        return BinaryFixedPoint.from_numeric(value, whole_bits, fraction_bits).to_float()
 
 if __name__ == '__main__':
     test_vector = ['1']*5 + ['0']*20 + ['1']*7
@@ -175,14 +211,12 @@ if __name__ == '__main__':
     print(test_obj.value)
     print(test_obj)
 
-    test_one = BinaryFixedPoint(whole_bits=4, fraction_bits=4)
-    test_one.value = '00000001'
+    test_one = BinaryFixedPoint.from_bit_vector(
+        '00000001', 4, 4)
     print(test_one)
-    two = BinaryFixedPoint(whole_bits=4, fraction_bits=4)
-    two.value = '00000010'
+    two = BinaryFixedPoint.from_bit_vector('00000010', 4, 4)
     print(two)
-    six = BinaryFixedPoint(whole_bits=4, fraction_bits=4)
-    six.value = '00000110'
+    six = BinaryFixedPoint('00000110', 4, 4)
     print(six)
     c = test_one + six
     print(c)
@@ -223,13 +257,14 @@ if __name__ == '__main__':
     except ArithmeticError as e:
         print(e)
 
-    print(BinaryFixedPoint.from_float(0.5))
-    print(BinaryFixedPoint.from_float(1.5))
-    print(BinaryFixedPoint.from_float(2.5))
-    print(BinaryFixedPoint.from_float(math.pi))
+    print(BinaryFixedPoint.from_numeric(0.5))
+    print(BinaryFixedPoint.from_numeric(1.5))
+    print(BinaryFixedPoint.from_numeric(2.5))
+    print(BinaryFixedPoint.from_numeric(math.pi))
+    print(BinaryFixedPoint.from_numeric(1))
 
     print('\n')
-    bfp_pi = BinaryFixedPoint.from_float(math.pi,
+    bfp_pi = BinaryFixedPoint.from_numeric(math.pi,
                                          whole_bits=14,
                                          fraction_bits=18)
     print(bfp_pi)
