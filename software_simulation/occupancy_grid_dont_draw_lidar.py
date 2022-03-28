@@ -14,6 +14,7 @@ FREE_FACTOR = 0.4
 OCCUPIED_FACTOR = 0.6
 # Constants
 BINARY_PI = BinaryFixedPoint.from_numeric(np.pi)
+ZERO = BinaryFixedPoint.from_numeric(0)
 
 # TODO Implement
 # @dataclass
@@ -89,6 +90,7 @@ def update_grid(current_position: list[BinaryFixedPoint],
 
 def bresenham_polar(rho: BinaryFixedPoint, theta:BinaryFixedPoint) -> list[list[BinaryFixedPoint]]:
     reduced_theta, y_flip, x_flip, id_flip = reduce_octant_angle(theta)
+    reduced_theta = max(reduced_theta, ZERO)
     reduced_theta_float = reduced_theta.to_float()
     tan_reduced_theta = BinaryFixedPoint.from_numeric(np.tan(reduced_theta_float))
     cos_reduced_theta = BinaryFixedPoint.from_numeric(np.cos(reduced_theta_float))
