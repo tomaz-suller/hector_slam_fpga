@@ -7,9 +7,9 @@ import numpy as np
 from fixed_point import BinaryFixedPoint
 
 # Parameters
-RIGHT_SHIFTS_WORLD_TO_MAP = 0
-LEFT_SHIFTS_MAP_TO_WORLD = RIGHT_SHIFTS_WORLD_TO_MAP
-MAP_CELLS_PER_WORLD_CELL = 2**RIGHT_SHIFTS_WORLD_TO_MAP
+RIGHT_SHIFTS_WORLD_TO_GRID = 0
+LEFT_SHIFTS_GRID_TO_WORLD = RIGHT_SHIFTS_WORLD_TO_GRID
+GRID_CELLS_PER_WORLD_CELL = 2**RIGHT_SHIFTS_WORLD_TO_GRID
 PROBABILITY_UPDATE_FACTOR = 0.6
 # Constants
 BINARY_PI = BinaryFixedPoint.from_numeric(np.pi)
@@ -32,9 +32,10 @@ def main():
     environment = 0.9 < np.linalg.norm(environment_img, axis=2)
     environment_shape = environment.shape
 
-    occupancy_grid = np.zeros((environment_shape[0]//MAP_CELLS_PER_WORLD_CELL,
-                               environment_shape[1]//MAP_CELLS_PER_WORLD_CELL))
-    current_position = numeric_iter_to_binary([256, 256, 0.0])
+    occupancy_grid = np.zeros((environment_shape[0]//GRID_CELLS_PER_WORLD_CELL,
+                               environment_shape[1]//GRID_CELLS_PER_WORLD_CELL))
+    current_position = numeric_iter_to_binary(
+        [environment_shape[0]/2, environment_shape[1]/2, 0.0])
     movements = [numeric_iter_to_binary([0, 0, 0.0]),
                  numeric_iter_to_binary([15, 5, 0.0]),
                  numeric_iter_to_binary([5, 10, 0.0]),
@@ -46,8 +47,8 @@ def main():
             for i, movement_coordinate in enumerate(movement):
                 current_position[i] = current_position[i] + movement_coordinate
             relative_lidar_scans = lidar(current_position, environment, 720)
-            current_map_position = world_to_map(current_position)
-            update_grid(current_map_position, relative_lidar_scans, occupancy_grid)
+            current_grid_position = world_to_grid(current_position)
+            update_grid(current_grid_position, relative_lidar_scans, occupancy_grid)
         draw_grid(occupancy_grid,
                   fix_scale=True,
                   xlim=[150, 385],
@@ -65,15 +66,16 @@ def lidar(current_position: list[BinaryFixedPoint],
     acc = []
     for theta in np.linspace(0, 2*np.pi, n_measures):
         theta = theta + psi
-        measure = (size_max, theta)
         for rho in range(1, size_max+1):
             check_px = math.ceil(sensor_px + rho*np.cos(theta))
             check_py = math.ceil(sensor_py + rho*np.sin(theta))
-            if (0 < check_px <= size_x and
-                    0 < check_py <= size_y and
+            if (0 < check_px < size_x and
+                    0 < check_py < size_y and
                     not environment[check_py, check_px]):
                 measure = numeric_iter_to_binary([rho-1, theta])
                 break
+        else:
+            measure = numeric_iter_to_binary([size_max, theta])
         acc.append(measure)
     return acc
 
@@ -84,8 +86,10 @@ def update_grid(current_position: list[BinaryFixedPoint],
     origin_x = current_position[0]
     origin_y = current_position[1]
     for scan in relative_lidar_scans:
-        relative_cells = bresenham_polar(*scan)
-        for i, (relative_x, relative_y) in enumerate(relative_cells): # TODO continue from here
+        relative_cells = bresenham_polar_input(*scan)
+        for i, (relative_x, relative_y) in enumerate(relative_cells):
+            # TODO Index values need to be truncated in hardware for SLAM to work
+            # though not for the occupancy grid
             x_index = (origin_x + relative_x).to_int()
             y_index = (origin_y + relative_y).to_int()
             if i == len(relative_cells)-1: # Only the last cell is occupied
@@ -93,7 +97,8 @@ def update_grid(current_position: list[BinaryFixedPoint],
             else:
                 grid[y_index, x_index] -= 1
 
-def bresenham_polar(rho: BinaryFixedPoint, theta:BinaryFixedPoint) -> list[list[BinaryFixedPoint]]:
+def bresenham_polar_input(rho: BinaryFixedPoint,
+                          theta: BinaryFixedPoint) -> list[list[BinaryFixedPoint]]:
     reduced_theta, y_flip, x_flip, id_flip = reduce_octant_angle(theta)
     reduced_theta = max(reduced_theta, ZERO)
     reduced_theta_float = reduced_theta.to_float()
@@ -101,12 +106,12 @@ def bresenham_polar(rho: BinaryFixedPoint, theta:BinaryFixedPoint) -> list[list[
     cos_reduced_theta = BinaryFixedPoint.from_numeric(np.cos(reduced_theta_float))
 
     cells = []
-    final_cell_index = world_coordinate_to_map(rho*cos_reduced_theta).to_int()
+    final_cell_index = world_coordinate_to_grid(rho*cos_reduced_theta).to_int()
     # TODO Check whether adding one to the end of the range makes a difference
-    for i in range(0, final_cell_index):
+    for i in range(final_cell_index):
         binary_i = BinaryFixedPoint.from_numeric(i)
         raw_cell = [binary_i,
-                    world_coordinate_to_map(binary_i*tan_reduced_theta)]
+                    world_coordinate_to_grid(binary_i*tan_reduced_theta)]
         cells.append(unreduce_cell(raw_cell, y_flip, x_flip, id_flip))
 
     return cells
@@ -133,6 +138,7 @@ def unreduce_cell(cell: list[BinaryFixedPoint],
                   y_flip: bool,
                   x_flip: bool,
                   identity_flip: bool) -> list[BinaryFixedPoint]:
+    # pylint: disable=invalid-name
     x, y = cell
 
     if identity_flip:
@@ -173,21 +179,21 @@ def imshow(arr: np.ndarray,
         np.max(arr)
     return plt.imshow(arr, cmap='gray', vmin=vmin, vmax=vmax)
 
-def world_to_map(point: list[BinaryFixedPoint]) -> list[BinaryFixedPoint]:
+def world_to_grid(point: list[BinaryFixedPoint]) -> list[BinaryFixedPoint]:
     return [
-        world_coordinate_to_map(point[0]),
-        world_coordinate_to_map(point[1]),
+        world_coordinate_to_grid(point[0]),
+        world_coordinate_to_grid(point[1]),
         point[2], # Angular coordinate is not affected
     ]
 
-def world_coordinate_to_map(coordinate: BinaryFixedPoint) -> BinaryFixedPoint:
+def world_coordinate_to_grid(coordinate: BinaryFixedPoint) -> BinaryFixedPoint:
     return BinaryFixedPoint.from_numeric(
-        (coordinate>>RIGHT_SHIFTS_WORLD_TO_MAP).to_int())
+        (coordinate>>RIGHT_SHIFTS_WORLD_TO_GRID).to_int())
 
-def map_to_world(point: list[BinaryFixedPoint]) -> list[BinaryFixedPoint]:
+def grid_to_world(point: list[BinaryFixedPoint]) -> list[BinaryFixedPoint]:
     return [
-        point[0] << LEFT_SHIFTS_MAP_TO_WORLD,
-        point[1] << LEFT_SHIFTS_MAP_TO_WORLD,
+        point[0] << LEFT_SHIFTS_GRID_TO_WORLD,
+        point[1] << LEFT_SHIFTS_GRID_TO_WORLD,
         point[2], # Angular coordinate is not affected
     ]
 
