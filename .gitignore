@@ -1,3 +1,7 @@
+*.bak
+*.log
+slpp_all
+
 # Synthesis
 synthesis/*
 !synthesis/Manifest.py
