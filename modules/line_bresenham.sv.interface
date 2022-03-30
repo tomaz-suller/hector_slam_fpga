@@ -1,0 +1,21 @@
+typedef struct packed {
+    logic [15:0] x;
+    logic [15:0] y;
+} point;
+
+typedef struct packed {
+    logic  [15:0] rho;
+    logic [15:0] theta;
+} point_relative_polar;
+
+module line_bresenham_oct1 #(
+    parameter GRID_WIDTH = 32,
+    parameter GRID_HEIGHT = 32
+) (
+    input point actual_position,
+    input point_relative_polar measure,
+    output point [$max(GRID_WIDTH, GRID_HEIGHT)] grid_point,
+    output [$max(GRID_WIDTH, GRID_HEIGHT)] point_enable
+);
+
+endmodule

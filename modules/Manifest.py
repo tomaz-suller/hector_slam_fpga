@@ -1,4 +1,10 @@
 files = [
-    "op_sum.sv",
-    "defines.vh",
+    "packages.sv",
 ]
+
+modules = {
+    "local" : [
+        "bresenham/",
+        "occupancy_grid/",
+    ],
+}
