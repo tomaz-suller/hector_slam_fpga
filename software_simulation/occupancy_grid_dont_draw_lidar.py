@@ -51,8 +51,9 @@ def main():
             update_grid(current_grid_position, relative_lidar_scans, occupancy_grid)
         draw_grid(occupancy_grid,
                   fix_scale=True,
-                  xlim=[150, 385],
-                  ylim=[140, 325])
+                #   xlim=[150, 385],
+                #   ylim=[140, 325],
+        )
         plt.show()
     except KeyboardInterrupt:
         return
@@ -167,6 +168,10 @@ def draw_grid(grid: np.ndarray,
 def crop_array(array: np.ndarray,
                xlim: list[int],
                ylim: list[int]) -> np.ndarray:
+    if xlim is None:
+        xlim = [0, array.shape[1]]
+    if ylim is None:
+        ylim = [0, array.shape[0]]
     return array[ylim[0]:ylim[1], xlim[0]:xlim[1]]
 
 def imshow(arr: np.ndarray,

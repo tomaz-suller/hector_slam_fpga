@@ -216,7 +216,7 @@ if __name__ == '__main__':
     print(test_one)
     two = BinaryFixedPoint.from_bit_vector('00000010', 4, 4)
     print(two)
-    six = BinaryFixedPoint('00000110', 4, 4)
+    six = BinaryFixedPoint.from_bit_vector('00000110', 4, 4)
     print(six)
     c = test_one + six
     print(c)
