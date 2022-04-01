@@ -10,4 +10,4 @@ module index_to_address
 
     assign address = x_index + (y_index * ram_pkg::WIDTH);
 
-endmodule
+endmodule: index_to_address

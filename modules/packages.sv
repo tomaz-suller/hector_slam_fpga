@@ -17,13 +17,14 @@ endpackage: fixed_pkg
 package ram_pkg;
     localparam WORD_SIZE = 8;
     localparam WIDTH = 128;
-    localparam WIDTH_SIZE = $clog2(WIDTH);
     localparam HEIGHT = 32;
-    localparam HEIGHT_SIZE = $clog2(HEIGHT);
+    localparam INDEX_WIDTH = $clog2(WIDTH);
+    localparam NUMBER_CELLS = WIDTH*HEIGHT;
+    localparam ADDRESS_WIDTH = $clog2(NUMBER_CELLS);
 
     typedef logic [WORD_SIZE-1:0] word_t;
-    typedef word_t [0:HEIGHT][0:WIDTH] memory_t;
-    typedef logic [WIDTH_SIZE-1:0] width_index_t;
-    typedef logic [HEIGHT_SIZE-1:0] height_index_t;
+    typedef word_t memory_t [0:NUMBER_CELLS-1];
+    typedef logic [INDEX_WIDTH-1:0] index_t;
+    typedef logic [ADDRESS_WIDTH-1:0] address_t;
 endpackage: ram_pkg
 `endif
