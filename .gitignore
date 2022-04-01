@@ -1,19 +1,24 @@
-*.bak
-*.log
-slpp_all
-
 # Synthesis
 synthesis/*
-!synthesis/Manifest.py
+## Surelog
+*.log
+*.lst
+*.uhdm
+work
+## yosys
+*.vqm
 
 # Simulation
 simulation/*
-!simulation/Manifest.py
-!simulation/*py
 *.cf
 *.o
 
 # Misc
+## scripts and hdlmake config files
+!*.py
+## Quartus backup files
+*.bak
+## hdlmake generated Makefiles
 Makefile
 .vscode
 __pycache__
