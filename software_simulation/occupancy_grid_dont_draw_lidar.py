@@ -11,6 +11,7 @@ RIGHT_SHIFTS_WORLD_TO_GRID = 0
 LEFT_SHIFTS_GRID_TO_WORLD = RIGHT_SHIFTS_WORLD_TO_GRID
 GRID_CELLS_PER_WORLD_CELL = 2**RIGHT_SHIFTS_WORLD_TO_GRID
 PROBABILITY_UPDATE_FACTOR = 0.6
+FRACTION_BITS_FOR_ANGLE = 10
 # Constants
 BINARY_PI = BinaryFixedPoint.from_numeric(np.pi)
 ZERO = BinaryFixedPoint.from_numeric(0)
@@ -102,9 +103,10 @@ def bresenham_polar_input(rho: BinaryFixedPoint,
                           theta: BinaryFixedPoint) -> list[list[BinaryFixedPoint]]:
     reduced_theta, y_flip, x_flip, id_flip = reduce_octant_angle(theta)
     reduced_theta = max(reduced_theta, ZERO)
-    reduced_theta_float = reduced_theta.to_float()
-    tan_reduced_theta = BinaryFixedPoint.from_numeric(np.tan(reduced_theta_float))
-    cos_reduced_theta = BinaryFixedPoint.from_numeric(np.cos(reduced_theta_float))
+    truncated_theta = truncate_angle(reduced_theta)
+    theta_float = truncated_theta.to_float()
+    tan_reduced_theta = BinaryFixedPoint.from_numeric(np.tan(theta_float))
+    cos_reduced_theta = BinaryFixedPoint.from_numeric(np.cos(theta_float))
 
     cells = []
     final_cell_index = world_coordinate_to_grid(rho*cos_reduced_theta).to_int()
@@ -150,6 +152,13 @@ def unreduce_cell(cell: list[BinaryFixedPoint],
         y = -y
 
     return [x, y]
+
+def truncate_angle(angle: BinaryFixedPoint) -> BinaryFixedPoint:
+    bv = angle.value
+    return BinaryFixedPoint.from_bit_vector(
+        bv[:angle.whole_bits+FRACTION_BITS_FOR_ANGLE]
+        +bv[angle.whole_bits+FRACTION_BITS_FOR_ANGLE:].replace('1', '0')
+    )
 
 def draw_grid(grid: np.ndarray,
               fix_scale: bool = False,
