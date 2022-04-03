@@ -1,13 +1,15 @@
 `include "../packages.sv"
 
 module grid_to_index
-    import fixed_pkg::fixed_t,
-           ram_pkg::index_t;
+    import fixed_pkg::fixed_t;
+#(
+    parameter INDEX_WIDTH = 4
+)
 (
     input fixed_t grid,
-    output index_t index
+    output logic [INDEX_WIDTH-1:0] index
 );
 
-    assign index = ram_pkg::INDEX_WIDTH'(grid.integer_);
+    assign index = INDEX_WIDTH'(grid.integer_);
 
 endmodule: grid_to_index

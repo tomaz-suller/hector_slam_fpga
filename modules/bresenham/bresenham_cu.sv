@@ -1,13 +1,13 @@
 `include "../packages.sv"
 
 module bresenham_cu
-    import ram_pkg::index_t;
+    import ram_pkg::width_index_t;
 (
     input logic clock, reset,
     input logic start,
     output logic x_source, x_we,
                  cell_is_free, write_enable,
-    input index_t current_x,
+    input width_index_t current_x,
     output logic busy
 );
     typedef enum {
@@ -15,11 +15,11 @@ module bresenham_cu
         SET_UP,
         UPDATE_OCCUPIED,
         UPDATE_FREE
-     } state_t;
+    } state_t;
 
     state_t current, next;
 
-    always_ff @( posedge(clock) ) begin : StateTransition
+    always_ff @( posedge(clock), posedge(reset) ) begin : StateTransition
         if (reset) current = WAIT;
         else current = next;
     end

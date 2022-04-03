@@ -8,14 +8,18 @@
 
 module bresenham_df
     import fixed_pkg::fixed_t,
-           ram_pkg::index_t;
+           ram_pkg::width_index_t,
+           ram_pkg::height_index_t,
+           ram_pkg::WIDTH_INDEX_WIDTH,
+           ram_pkg::HEIGHT_INDEX_WIDTH;
 (
     input logic clock,
     input fixed_t magnitude, angle,
                   sensor_x, sensor_y,
     input logic x_source, x_we,
     output fixed_t current_x,
-    output index_t x_index, y_index
+    output width_index_t x_index,
+    output height_index_t y_index
 );
 
     logic flip_x, flip_y, flip_identity;
@@ -24,8 +28,8 @@ module bresenham_df
             x_world, y_world,
             x_grid, y_grid;
     fixed_t x_grid_reg;
-    index_t x_raw, y_raw,
-            x_relative, y_relative;
+    width_index_t x_raw, x_relative;
+    height_index_t y_raw, y_relative;
 
     reduce_angle angle_to_first_octant (.*);
 
@@ -57,12 +61,12 @@ module bresenham_df
         .grid(y_grid)
     );
 
-    grid_to_index x_grid_to_index (
+    grid_to_index #( WIDTH_INDEX_WIDTH ) x_grid_to_index (
         .grid(x_grid_reg),
         .index(x_raw)
     );
     assign current_x = x_raw;
-    grid_to_index y_grid_to_index (
+    grid_to_index #( HEIGHT_INDEX_WIDTH ) y_grid_to_index (
         .grid(y_grid),
         .index(y_raw)
     );
@@ -79,7 +83,7 @@ module bresenham_df
         .world(sensor_x),
         .grid(sensor_x_grid)
     );
-    grid_to_index sensor_x_grid_to_index (
+    grid_to_index #( WIDTH_INDEX_WIDTH ) sensor_x_grid_to_index (
         .grid(sensor_x_grid),
         .index(sensor_x_index)
     );
@@ -87,7 +91,7 @@ module bresenham_df
         .world(sensor_y),
         .grid(sensor_y_grid)
     );
-    grid_to_index sensor_y_grid_to_index (
+    grid_to_index #( HEIGHT_INDEX_WIDTH ) sensor_y_grid_to_index (
         .grid(sensor_y_grid),
         .index(sensor_y_index)
     );
