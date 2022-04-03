@@ -1,27 +1,24 @@
-`include "../packages.sv"
 `include "index_to_address.sv"
 `include "ram.sv"
 
 module occupancy_df
-    import fixed_pkg::fixed_t,
-           ram_pkg::*;
 #(
-    localparam word_t ONE = WORD_SIZE'(1),
-    localparam word_t ZERO = WORD_SIZE'(0)
+    localparam logic [7:0] ONE = 8'(1),
+    localparam logic [7:0] ZERO = 8'(0)
 )
 (
     input logic clock,
     input logic zero_cell, write_enable, cell_is_free,
                 reset_counter, enable_counter,
-    input width_index_t x,
-    input height_index_t y,
-    output word_t data_out,
+    input logic [4:0] x,
+    input logic [3:0] y,
+    output logic [7:0] data_out,
     output logic count_done
 );
-    word_t memory_input;
-    width_index_t x_count, x_memory;
-    height_index_t y_count, y_memory;
-    address_t address;
+    logic [7:0] memory_input;
+    logic [4:0] x_count, x_memory;
+    logic [3:0] y_count, y_memory;
+    logic [8:0] address;
 
     always_ff @( posedge(clock) ) begin : IndexCounter
         if (reset_counter) begin

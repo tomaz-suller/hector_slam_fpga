@@ -1,17 +1,14 @@
-`include "../packages.sv"
-
 module reduce_angle
-    import fixed_pkg::fixed_t;
 #(
-    localparam fixed_t PI = 'b00000000000011001001000011111101
+    localparam logic [31:0] PI = 32'b00000000000011001001000011111101
 )
 (
-    input fixed_t angle,
-    output fixed_t reduced_angle,
+    input logic [31:0] angle,
+    output logic [31:0] reduced_angle,
     output logic flip_y, flip_x, flip_identity
 );
 
-    fixed_t first_stage_result,
+    logic [31:0] first_stage_result,
             second_stage_result,
             third_stage_result;
 

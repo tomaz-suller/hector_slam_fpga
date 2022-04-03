@@ -1,6 +1,4 @@
-files = [
-    "packages.sv",
-]
+files = []
 
 modules = {
     "local" : [

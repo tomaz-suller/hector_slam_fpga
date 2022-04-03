@@ -1,18 +1,14 @@
-`include "../packages.sv"
 `include "occupancy_cu.sv"
 `include "occupancy_df.sv"
 
 module occupancy
-    import ram_pkg::width_index_t,
-           ram_pkg::height_index_t,
-           ram_pkg::word_t;
 (
     input logic clock, reset,
     input logic zero_memory, bresenham_we,
-    input width_index_t x,
-    input height_index_t y,
+    input logic [4:0] x,
+    input logic [3:0] y,
     input logic cell_is_free,
-    output word_t data_out,
+    output logic [7:0] data_out,
     output logic busy
 );
 

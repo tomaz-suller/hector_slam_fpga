@@ -1,13 +1,10 @@
-`include "../packages.sv"
-
 module bresenham_cu
-    import ram_pkg::width_index_t;
 (
     input logic clock, reset,
     input logic start,
     output logic x_source, x_we,
                  cell_is_free, write_enable,
-    input width_index_t current_x,
+    input logic [4:0] current_x,
     output logic busy
 );
     typedef enum {

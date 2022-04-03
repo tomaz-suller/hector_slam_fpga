@@ -1,10 +1,7 @@
-`include "../packages.sv"
-
 module world_to_grid
-    import fixed_pkg::fixed_t;
 (
-    input fixed_t world,
-    output fixed_t grid
+    input logic [31:0] world,
+    output logic [31:0] grid
 );
 
     assign grid = world;

@@ -1,18 +1,14 @@
-`include "../packages.sv"
-
 module flip_indices
-    import ram_pkg::width_index_t,
-           ram_pkg::height_index_t;
 (
     input logic flip_x, flip_y, flip_identity,
-    input width_index_t x_in,
-    input height_index_t y_in,
-    output width_index_t x,
-    output height_index_t y
+    input logic [4:0] x_in,
+    input logic [3:0] y_in,
+    output logic [4:0] x,
+    output logic [3:0] y
 );
 
-    width_index_t flipped_x;
-    height_index_t flipped_y;
+    logic [4:0] flipped_x;
+    logic [3:0] flipped_y;
 
     assign flipped_x = -x_in;
     assign flipped_y = -y_in;

@@ -1,17 +1,13 @@
-`include "../packages.sv"
-
 module ram
-    import fixed_pkg::fixed_t,
-           ram_pkg::*;
 (
     input logic clock,
     input logic write_enable,
-    input address_t address,
-    input word_t input_data,
-    output word_t output_data
+    input logic [8:0] address,
+    input logic [7:0] input_data,
+    output logic [7:0] output_data
 );
 
-    memory_t memory;
+    logic [7:0] memory [0:(16*32)-1];
 
     always_ff @( posedge(clock) ) begin : Ram
         if (write_enable)
