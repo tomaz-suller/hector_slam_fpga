@@ -1,10 +1,9 @@
 `include "../packages.sv"
 
 module reduce_angle
-    import fixed_pkg::fixed_t,
-           fixed_pkg::WIDTH;
+    import fixed_pkg::fixed_t;
 #(
-    localparam logic [WIDTH-1:0] PI = 'b00000000000011001001000011111101
+    localparam fixed_t PI = 'b00000000000011001001000011111101
 )
 (
     input fixed_t angle,
