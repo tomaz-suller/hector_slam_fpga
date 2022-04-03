@@ -1,5 +1,3 @@
-`include "bresenham_df.sv"
-`include "bresenham_cu.sv"
 
 module bresenham
 (

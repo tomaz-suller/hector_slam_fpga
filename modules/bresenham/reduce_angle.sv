@@ -1,6 +1,6 @@
 module reduce_angle
 #(
-    localparam logic [31:0] PI = 32'b00000000000011001001000011111101
+    PI = 32'b00000000000011001001000011111101
 )
 (
     input logic [31:0] angle,

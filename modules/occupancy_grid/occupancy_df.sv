@@ -1,10 +1,8 @@
-`include "index_to_address.sv"
-`include "ram.sv"
 
 module occupancy_df
 #(
-    localparam logic [7:0] ONE = 8'(1),
-    localparam logic [7:0] ZERO = 8'(0)
+    ONE = 8'(1),
+    ZERO = 8'(0)
 )
 (
     input logic clock,

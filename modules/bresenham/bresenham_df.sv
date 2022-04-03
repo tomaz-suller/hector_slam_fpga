@@ -1,9 +1,3 @@
-`include "reduce_angle.sv"
-`include "cossine_lut.sv"
-`include "tangent_lut.sv"
-`include "world_to_grid.sv"
-`include "grid_to_index.sv"
-`include "flip_indices.sv"
 
 module bresenham_df
 (

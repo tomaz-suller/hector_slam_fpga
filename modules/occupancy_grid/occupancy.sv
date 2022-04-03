@@ -1,5 +1,3 @@
-`include "occupancy_cu.sv"
-`include "occupancy_df.sv"
 
 module occupancy
 (
