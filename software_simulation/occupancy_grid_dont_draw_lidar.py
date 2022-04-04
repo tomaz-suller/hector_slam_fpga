@@ -68,16 +68,16 @@ def lidar(current_position: list[BinaryFixedPoint],
     acc = []
     for theta in np.linspace(0, 2*np.pi, n_measures):
         theta = theta + psi
-        for rho in range(1, size_max+1):
+        for rho in np.linspace(1, size_max+1, 1*size_max):
             check_px = math.ceil(sensor_px + rho*np.cos(theta))
             check_py = math.ceil(sensor_py + rho*np.sin(theta))
-            if (0 < check_px < size_x and
-                    0 < check_py < size_y and
+            if (0 <= check_px < size_x and
+                    0 <= check_py < size_y and
                     not environment[check_py, check_px]):
                 measure = numeric_iter_to_binary([rho-1, theta])
                 break
         else:
-            measure = numeric_iter_to_binary([size_max, theta])
+            raise Exception(f'No valid measurement found for theta = {theta}')
         acc.append(measure)
     return acc
 
