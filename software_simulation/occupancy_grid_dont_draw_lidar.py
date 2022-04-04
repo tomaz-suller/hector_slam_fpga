@@ -28,20 +28,36 @@ ZERO = BinaryFixedPoint.from_numeric(0)
 #     y: BinaryFixedPoint
 
 def main():
-    environment_img = plt.imread("software_simulation/maze.png")
+    environment_img = plt.imread("software_simulation/PCS_320x160.png")
     environment_img = environment_img[:, :, :3] # Remove alpha channel
     environment = 0.9 < np.linalg.norm(environment_img, axis=2)
     environment_shape = environment.shape
 
     occupancy_grid = np.zeros((environment_shape[0]//GRID_CELLS_PER_WORLD_CELL,
                                environment_shape[1]//GRID_CELLS_PER_WORLD_CELL))
-    current_position = numeric_iter_to_binary(
-        [environment_shape[0]/2, environment_shape[1]/2, 0.0])
-    movements = [numeric_iter_to_binary([0, 0, 0.0]),
-                 numeric_iter_to_binary([15, 5, 0.0]),
-                 numeric_iter_to_binary([5, 10, 0.0]),
-                 numeric_iter_to_binary([10, -5, 0.0]),
-                 numeric_iter_to_binary([20, 10, 0.0])]
+    current_position = numeric_iter_to_binary([16, 16, 0.0])
+    # current_position = numeric_iter_to_binary([environment_shape[0]//2, environment_shape[1]//2, 0.0])
+    # movements = [
+        # numeric_iter_to_binary([0, 0, 0.0]),
+        # numeric_iter_to_binary([13, 0, 0.0]),
+        # numeric_iter_to_binary([5, 0, 0.0]),
+        # numeric_iter_to_binary([9, 6, 0.0]),
+        # numeric_iter_to_binary([-13, 6, 0.0]),
+        # numeric_iter_to_binary([-9, 0, 0.0]),
+        # numeric_iter_to_binary([3, -4, 0.0]),
+    # ]
+    movements = [
+        numeric_iter_to_binary([0, 0, 0.0]),
+        numeric_iter_to_binary([84, 0, 0.0]),
+        numeric_iter_to_binary([100, 0, 0.0]),
+        numeric_iter_to_binary([95, 0, 0.0]),
+        numeric_iter_to_binary([0, 64, 0.0]),
+        numeric_iter_to_binary([0, 60, 0.0]),
+        numeric_iter_to_binary([-95, 0, 0.0]),
+        numeric_iter_to_binary([0, -70, 0.0]),
+        numeric_iter_to_binary([0, 70, 0.0]),
+        numeric_iter_to_binary([-100, 0, 0.0]),
+    ]
 
     try:
         for movement in movements:
@@ -50,11 +66,7 @@ def main():
             relative_lidar_scans = lidar(current_position, environment, 720)
             current_grid_position = world_to_grid(current_position)
             update_grid(current_grid_position, relative_lidar_scans, occupancy_grid)
-        draw_grid(occupancy_grid,
-                  fix_scale=True,
-                #   xlim=[150, 385],
-                #   ylim=[140, 325],
-        )
+        draw_grid(occupancy_grid, fix_scale=True)
         plt.show()
     except KeyboardInterrupt:
         return
