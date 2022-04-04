@@ -10,9 +10,9 @@ module ram
     logic [7:0] memory [0:(16*32)-1];
 
     always_ff @( posedge(clock) ) begin : Ram
+        output_data = memory[address];
         if (write_enable)
             memory[address] = input_data;
     end
-    assign output_data = memory[address];
 
 endmodule: ram
