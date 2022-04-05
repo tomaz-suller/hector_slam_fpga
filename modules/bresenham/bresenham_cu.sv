@@ -10,6 +10,7 @@ module bresenham_cu
 );
     typedef enum {
         WAIT,
+        WAIT_OCCUPANCY,
         SET_UP,
         UPDATE_OCCUPIED,
         UPDATE_FREE
@@ -25,7 +26,9 @@ module bresenham_cu
     always_comb begin : NextState
         case (current)
             WAIT:
-                if (start && !occupancy_busy) next = SET_UP;
+                if (start)
+                    if (occupancy_busy) next = WAIT_OCCUPANCY;
+                    else next = SET_UP;
                 else next = WAIT;
             SET_UP:
                 next = UPDATE_OCCUPIED;
@@ -51,6 +54,11 @@ module bresenham_cu
                 x_we = 0;
                 write_enable = 0;
                 busy = 0;
+            end
+            WAIT_OCCUPANCY: begin
+                x_we = 0;
+                write_enable = 0;
+                busy = 1;
             end
             SET_UP: begin
                 x_source = 0;
