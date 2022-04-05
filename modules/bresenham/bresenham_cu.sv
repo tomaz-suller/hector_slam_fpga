@@ -12,8 +12,8 @@ module bresenham_cu
         WAIT,
         WAIT_OCCUPANCY,
         SET_UP,
-        UPDATE_OCCUPIED,
-        UPDATE_FREE
+        GET_CELL_VALUE_1, UPDATE_OCCUPIED,
+        GET_CELL_VALUE_2, UPDATE_FREE
     } state_t;
 
     state_t current, next;
@@ -31,12 +31,17 @@ module bresenham_cu
                     else next = SET_UP;
                 else next = WAIT;
             SET_UP:
+                next = GET_CELL_VALUE_1;
+            GET_CELL_VALUE_1:
                 next = UPDATE_OCCUPIED;
             UPDATE_OCCUPIED:
-                next =  UPDATE_FREE;
-            UPDATE_FREE:
+                next =  GET_CELL_VALUE_2;
+            GET_CELL_VALUE_2:
                 if (current_x == 0) next = WAIT;
                 else next = UPDATE_FREE;
+            UPDATE_FREE:
+                if (current_x == 0) next = WAIT;
+                else next = GET_CELL_VALUE_2;
             default:
                 next = WAIT;
         endcase
@@ -65,6 +70,7 @@ module bresenham_cu
                 x_we = 1;
                 busy = 1;
             end
+            // GET_CELL_VALUE_1
             UPDATE_OCCUPIED: begin
                 cell_is_free = 0;
                 x_source = 1;
@@ -72,6 +78,7 @@ module bresenham_cu
                 write_enable = 1;
                 busy = 1;
             end
+            // GET_CELL_VALUE_2
             UPDATE_FREE: begin
                 cell_is_free = 1;
                 x_source = 1;
