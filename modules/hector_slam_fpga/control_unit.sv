@@ -15,7 +15,11 @@ module control_unit
 );
 
     typedef enum {
-        RESET, WAIT, READ_POSITION, READ_SCAN, WAIT_ALGORITMH
+        RESET, WAIT,
+        READ_POSITION, WAIT_MEMORY_1,
+        GET_NEXT_SCAN, WAIT_MEMORY_2,
+        START_ALGORITHM,
+        WAIT_ALGORITMH
     } state_t;
 
     state_t current, next;
@@ -30,16 +34,22 @@ module control_unit
             RESET:
                 next = WAIT;
             WAIT:
-                if (start && !occupancy_busy) next = READ_POSITION;
+                if (start && !occupancy_busy) next = WAIT_MEMORY_1;
                 else next = WAIT;
+            WAIT_MEMORY_1:
+                next = READ_POSITION;
             READ_POSITION:
-                next = READ_SCAN;
-            READ_SCAN:
+                next = GET_NEXT_SCAN;
+            GET_NEXT_SCAN:
+                next = WAIT_MEMORY_2;
+            WAIT_MEMORY_2:
+                next = START_ALGORITHM;
+            START_ALGORITHM:
                 next = WAIT_ALGORITMH;
             WAIT_ALGORITMH: begin
                 if (!bresenham_busy && !occupancy_busy)
                     if (scan_done) next = READ_POSITION;
-                    else next = READ_SCAN;
+                    else next = GET_NEXT_SCAN;
                 else next = WAIT_ALGORITMH;
             end
             default:
@@ -61,14 +71,14 @@ module control_unit
                 zero_occupancy_grid = 1;
             end
             // WAIT
-            READ_POSITION: begin
-                address_enable = 1;
+            // WAIT_MEMORY_1
+            READ_POSITION:
                 position_enable = 1;
-            end
-            READ_SCAN: begin
+            GET_NEXT_SCAN:
                 address_enable = 1;
+            // WAIT_MEMORY_2
+            START_ALGORITHM:
                 bresenham_start = 1;
-            end
             WAIT_ALGORITMH:
                 use_bresenham_indices = 1;
             default: begin
