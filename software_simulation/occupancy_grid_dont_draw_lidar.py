@@ -28,7 +28,7 @@ ZERO = BinaryFixedPoint.from_numeric(0)
 #     y: BinaryFixedPoint
 
 def main():
-    environment_img = plt.imread("software_simulation/PCS_320x160.png")
+    environment_img = plt.imread("software_simulation/PCS_256x128.png")
     environment_img = environment_img[:, :, :3] # Remove alpha channel
     environment = 0.9 < np.linalg.norm(environment_img, axis=2)
     environment_shape = environment.shape
@@ -48,15 +48,15 @@ def main():
     # ]
     movements = [
         numeric_iter_to_binary([0, 0, 0.0]),
-        numeric_iter_to_binary([84, 0, 0.0]),
-        numeric_iter_to_binary([100, 0, 0.0]),
-        numeric_iter_to_binary([95, 0, 0.0]),
-        numeric_iter_to_binary([0, 64, 0.0]),
-        numeric_iter_to_binary([0, 60, 0.0]),
-        numeric_iter_to_binary([-95, 0, 0.0]),
-        numeric_iter_to_binary([0, -70, 0.0]),
-        numeric_iter_to_binary([0, 70, 0.0]),
-        numeric_iter_to_binary([-100, 0, 0.0]),
+        numeric_iter_to_binary([59, 0, 0.0]),
+        numeric_iter_to_binary([90, 0, 0.0]),
+        numeric_iter_to_binary([75, 0, 0.0]),
+        numeric_iter_to_binary([0, 54, 0.0]),
+        numeric_iter_to_binary([0, 40, 0.0]),
+        numeric_iter_to_binary([-80, 0, 0.0]),
+        numeric_iter_to_binary([0, -50, 0.0]),
+        numeric_iter_to_binary([0, 50, 0.0]),
+        numeric_iter_to_binary([-80, 0, 0.0]),
     ]
 
     try:
