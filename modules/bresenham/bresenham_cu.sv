@@ -5,6 +5,7 @@ module bresenham_cu
     output logic x_source, x_we,
                  cell_is_free, write_enable,
     input logic [4:0] current_x,
+    input logic occupancy_busy,
     output logic busy
 );
     typedef enum {
@@ -24,8 +25,8 @@ module bresenham_cu
     always_comb begin : NextState
         case (current)
             WAIT:
-                if (start) next = SET_UP;
-                else next = SET_UP;
+                if (start && !occupancy_busy) next = SET_UP;
+                else next = WAIT;
             SET_UP:
                 next = UPDATE_OCCUPIED;
             UPDATE_OCCUPIED:
