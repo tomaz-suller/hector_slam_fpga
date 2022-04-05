@@ -12,7 +12,7 @@ module occupancy_df
     logic [7:0] memory_input;
     logic [7:0] x_count, x_memory;
     logic [6:0] y_count, y_memory;
-    logic [8:0] address;
+    logic [14:0] address;
 
     always_ff @( posedge(clock) ) begin : IndexCounter
         if (reset_counter) begin

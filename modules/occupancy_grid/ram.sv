@@ -2,7 +2,7 @@ module ram
 (
     input logic clock,
     input logic write_enable,
-    input logic [8:0] address,
+    input logic [14:0] address,
     input logic [7:0] input_data,
     output logic [7:0] output_data
 );
