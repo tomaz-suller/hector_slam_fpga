@@ -14,10 +14,11 @@ module bresenham_df
     logic [31:0] reduced_angle,
                  cos_value, tan_value,
                  x_world, y_world,
-                 x_grid, y_grid;
+                 x_grid, y_grid,
+                 sensor_x_grid, sensor_y_grid;
     logic [31:0] x_grid_reg;
-    logic [7:0] x_raw, x_relative;
-    logic [6:0] y_raw, y_relative;
+    logic [7:0] x_raw, x_relative, sensor_x_index;
+    logic [6:0] y_raw, y_relative, sensor_y_index;
 
     reduce_angle angle_to_first_octant (.*);
 
@@ -44,7 +45,7 @@ module bresenham_df
 
     always_ff @( posedge(clock) ) begin : XGridReg
         if (x_we)
-            if (x_source) x_grid_reg = x_grid-1;
+            if (x_source) x_grid_reg -= 1<<18;
             else x_grid_reg = x_grid;
     end
 
@@ -58,12 +59,12 @@ module bresenham_df
         .grid(y_grid)
     );
 
-    grid_to_index #( 5 ) x_grid_to_index (
+    grid_to_index #( 8 ) x_grid_to_index (
         .grid(x_grid_reg),
         .index(x_raw)
     );
     assign current_x = x_raw;
-    grid_to_index #( 4 ) y_grid_to_index (
+    grid_to_index #( 7 ) y_grid_to_index (
         .grid(y_grid),
         .index(y_raw)
     );
@@ -80,7 +81,7 @@ module bresenham_df
         .world(sensor_x),
         .grid(sensor_x_grid)
     );
-    grid_to_index #( 5 ) sensor_x_grid_to_index (
+    grid_to_index #( 8 ) sensor_x_grid_to_index (
         .grid(sensor_x_grid),
         .index(sensor_x_index)
     );
@@ -88,7 +89,7 @@ module bresenham_df
         .world(sensor_y),
         .grid(sensor_y_grid)
     );
-    grid_to_index #( 4 ) sensor_y_grid_to_index (
+    grid_to_index #( 7 ) sensor_y_grid_to_index (
         .grid(sensor_y_grid),
         .index(sensor_y_index)
     );

@@ -7,7 +7,11 @@ module ram
     output logic [7:0] output_data
 );
 
-    logic [7:0] memory [0:(16*32)-1];
+    reg [7:0] memory [0:(256*128)-1];
+
+    initial begin
+        $readmemb("ram.txt", memory);
+    end
 
     always_ff @( posedge(clock) ) begin : Ram
         output_data = memory[address];
