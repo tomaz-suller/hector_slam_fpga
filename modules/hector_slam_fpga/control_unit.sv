@@ -16,7 +16,7 @@ module control_unit
 
     typedef enum {
         RESET, WAIT,
-        READ_POSITION, WAIT_MEMORY_1,
+        WAIT_MEMORY_1, READ_POSITION,
         GET_NEXT_SCAN, WAIT_MEMORY_2,
         START_ALGORITHM,
         WAIT_ALGORITMH
@@ -43,13 +43,13 @@ module control_unit
             GET_NEXT_SCAN:
                 next = WAIT_MEMORY_2;
             WAIT_MEMORY_2:
-                next = START_ALGORITHM;
+                if (scan_done) next = WAIT_MEMORY_1;
+                else next = START_ALGORITHM;
             START_ALGORITHM:
                 next = WAIT_ALGORITMH;
             WAIT_ALGORITMH: begin
                 if (!bresenham_busy && !occupancy_busy)
-                    if (scan_done) next = READ_POSITION;
-                    else next = GET_NEXT_SCAN;
+                    next = GET_NEXT_SCAN;
                 else next = WAIT_ALGORITMH;
             end
             default:

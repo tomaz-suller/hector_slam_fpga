@@ -23,7 +23,8 @@ module hector_slam_fpga_tb;
         start = 1;
         #(1*CLOCK_PERIOD)
         start = 0;
-        #(10000*CLOCK_PERIOD)
+        # (45805*CLOCK_PERIOD)
+        // #(450000*CLOCK_PERIOD)
 
         for (int i = 0; i < RAM_SIZE; i++)
             $fwrite(memory_dumpfile, "%b\n", dut.df.occupancy_module.data_flow.memory.memory[i]);

@@ -19,6 +19,10 @@ module data_flow
     logic [6:0] y_bresenham, y_display, y;
     logic cell_is_free, bresenham_we;
 
+    integer completed_scans;
+    logic [31:0] lidar_x, lidar_y;
+    logic [31:0] magnitude, angle;
+
     logic [7:0] occupancy_data;
 
     logic [12:0] scan_address;
@@ -26,7 +30,13 @@ module data_flow
         if (address_reset) scan_address = 0;
         else if (address_enable) scan_address += 1;
     end
-    assign scan_done = (scan_address == 720);
+
+    always_ff @( posedge(clock), posedge(address_reset) ) begin : CompletedScans
+        if (address_reset) completed_scans = 1;
+        else if (scan_address == completed_scans * 721)
+            completed_scans += 1;
+    end
+    assign scan_done = (scan_address == completed_scans * 721);
 
     scan_memory scans (
         .address(scan_address),
@@ -38,12 +48,16 @@ module data_flow
         if (position_enable) lidar_position = scan_data;
     end
 
+    assign magnitude = scan_data[63:32];
+    assign angle = scan_data[31:0];
+    assign lidar_x = lidar_position[63:32];
+    assign lidar_y = lidar_position[31:0];
     bresenham bresenham_module (
         .start(bresenham_start),
-        .magnitude(scan_data[63:32]),
-        .angle(scan_data[31:0]),
-        .sensor_x(lidar_position[63:32]),
-        .sensor_y(lidar_position[31:0]),
+        .magnitude(magnitude),
+        .angle(angle),
+        .sensor_x(lidar_x),
+        .sensor_y(lidar_y),
         .occupancy_busy(occupancy_busy),
         .x_index(x_bresenham),
         .y_index(y_bresenham),
