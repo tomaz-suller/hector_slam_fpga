@@ -2,15 +2,19 @@
 
 module hector_slam_fpga_tb;
     localparam CLOCK_PERIOD = 10;
+    localparam RAM_SIZE = 256*128;
 
     logic clock = 1;
     always #( CLOCK_PERIOD/2 ) clock = ~clock;
 
     logic reset, start;
+    integer memory_dumpfile;
 
     hector_slam_fpga dut (.*);
 
     initial begin
+        memory_dumpfile = $fopen("/tmp/memory_dump.txt", "w");
+
         start = 0;
         reset = 1;
         #(1*CLOCK_PERIOD)
@@ -20,8 +24,12 @@ module hector_slam_fpga_tb;
         #(1*CLOCK_PERIOD)
         start = 0;
         #(10000*CLOCK_PERIOD)
+
+        for (int i = 0; i < RAM_SIZE; i++)
+            $fwrite(memory_dumpfile, "%b\n", dut.df.occupancy_module.data_flow.memory.memory[i]);
+        $fclose(memory_dumpfile);
+
         $stop;
     end
-
 
 endmodule: hector_slam_fpga_tb
