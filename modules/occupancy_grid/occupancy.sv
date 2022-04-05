@@ -3,8 +3,8 @@ module occupancy
 (
     input logic clock, reset,
     input logic zero_memory, bresenham_we,
-    input logic [4:0] x,
-    input logic [3:0] y,
+    input logic [7:0] x,
+    input logic [6:0] y,
     input logic cell_is_free,
     output logic [7:0] data_out,
     output logic busy

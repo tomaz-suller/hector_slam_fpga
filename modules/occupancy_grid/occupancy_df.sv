@@ -4,14 +4,14 @@ module occupancy_df
     input logic clock,
     input logic zero_cell, write_enable, cell_is_free,
                 reset_counter, enable_counter,
-    input logic [4:0] x,
-    input logic [3:0] y,
+    input logic [7:0] x,
+    input logic [6:0] y,
     output logic [7:0] data_out,
     output logic count_done
 );
     logic [7:0] memory_input;
-    logic [4:0] x_count, x_memory;
-    logic [3:0] y_count, y_memory;
+    logic [7:0] x_count, x_memory;
+    logic [6:0] y_count, y_memory;
     logic [8:0] address;
 
     always_ff @( posedge(clock) ) begin : IndexCounter

@@ -1,7 +1,7 @@
 module index_to_address
 (
-    input logic [4:0] x_index,
-    input logic [3:0] y_index,
+    input logic [7:0] x_index,
+    input logic [6:0] y_index,
     output logic [8:0] address
 );
 

@@ -5,9 +5,9 @@ module bresenham_df
     input logic [31:0] magnitude, angle,
                        sensor_x, sensor_y,
     input logic x_source, x_we,
-    output logic [4:0] current_x,
-    output logic [4:0] x_index,
-    output logic [3:0] y_index
+    output logic [7:0] current_x,
+    output logic [7:0] x_index,
+    output logic [6:0] y_index
 );
 
     logic flip_x, flip_y, flip_identity;
@@ -16,8 +16,8 @@ module bresenham_df
                  x_world, y_world,
                  x_grid, y_grid;
     logic [31:0] x_grid_reg;
-    logic [4:0] x_raw, x_relative;
-    logic [3:0] y_raw, y_relative;
+    logic [7:0] x_raw, x_relative;
+    logic [6:0] y_raw, y_relative;
 
     reduce_angle angle_to_first_octant (.*);
 

@@ -4,7 +4,7 @@ module bresenham_cu
     input logic start,
     output logic x_source, x_we,
                  cell_is_free, write_enable,
-    input logic [4:0] current_x,
+    input logic [7:0] current_x,
     input logic occupancy_busy,
     output logic busy
 );
