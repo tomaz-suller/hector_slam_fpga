@@ -30,7 +30,12 @@ module bresenham_df
         .out(tan_value)
     );
 
-    assign x_world = magnitude * cos_value;
+
+    fixed_multiplication x_world_mul (
+        .a(magnitude),
+        .b(cos_value),
+        .r(x_world)
+    );
 
     world_to_grid x_world_to_grid (
         .world(x_world),
@@ -43,7 +48,11 @@ module bresenham_df
             else x_grid_reg = x_grid;
     end
 
-    assign y_world = x_grid_reg * tan_value;
+    fixed_multiplication y_world_mul (
+        .a(x_grid_reg),
+        .b(tan_value),
+        .r(y_world)
+    );
     world_to_grid y_world_to_grid (
         .world(y_world),
         .grid(y_grid)
