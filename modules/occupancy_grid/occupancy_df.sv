@@ -20,15 +20,11 @@ module occupancy_df
             y_count = 0;
         end
         if (enable_counter) begin
+            if (&x_count) y_count += 1;
             x_count += 1;
-            if (&x_count) begin
-                x_count = 0;
-                y_count += 1;
-            end
-            if (&y_count) y_count = 0;
         end
     end
-    assign count_done = (&x) & (&y);
+    assign count_done = (&x_count) & (&y_count);
 
     always_comb begin : MemoryInputMux
         if (zero_cell) memory_input = 0;
