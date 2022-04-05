@@ -1,9 +1,5 @@
 
 module occupancy_df
-#(
-    ONE = 8'(1),
-    ZERO = 8'(0)
-)
 (
     input logic clock,
     input logic zero_cell, write_enable, cell_is_free,
@@ -34,14 +30,19 @@ module occupancy_df
     end
     assign count_done = (&x) & (&y);
 
-    always_comb begin : cellIsFreeMux
-        if (zero_cell) memory_input = ZERO;
+    always_comb begin : MemoryInputMux
+        if (zero_cell) memory_input = 0;
         else
             if (cell_is_free)
-                memory_input = data_out - ONE;
+                // Do not allow overflow when memory contains 126
+                if ( (~data_out[7]) & (&data_out[6:0]) )
+                    memory_input = data_out;
+                else memory_input = data_out - 1;
             else
-                memory_input = data_out + ONE;
-    end
+                // Do not allow underflow when memory contains -127
+                if ( (data_out[7]) & (~|data_out[6:0]) )
+                    memory_input = data_out;
+                else memory_input = data_out + 1;    end
 
     always_comb begin : MemoryIndexMux
         if (zero_cell) begin
