@@ -15,10 +15,10 @@ module flip_indices
 
     always_comb begin : ChooseIndices
         if (flip_identity) begin
-            if (flip_x) y = flipped_x;
+            if (flip_x) x = {flipped_y[6], flipped_y};
+            else        x = {y_in[6], y_in};
+            if (flip_y) y = flipped_x;
             else        y = x_in;
-            if (flip_y) x = flipped_y;
-            else        x = y_in;
         end
         else begin
             if (flip_x) x = flipped_x;
