@@ -59,7 +59,7 @@ module control_unit
             end
             DRAW:
                 if (vga_busy) next = DRAW;
-                else next = WAIT;
+                else next = DRAW;
             default:
                 next = RESET;
         endcase

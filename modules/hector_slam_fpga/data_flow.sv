@@ -1,6 +1,6 @@
 module data_flow
 (
-    input logic clock, reset,
+    input logic clock, reset, pxlClk,
     input logic use_bresenham_indices,
     output logic scan_done,
                  simulation_done,
@@ -13,6 +13,11 @@ module data_flow
     input logic zero_occupancy_grid,
     output logic occupancy_busy,
     // VGA
+    output [3:0] vgaRed,
+    output [3:0] vgaBlue,
+    output [3:0] vgaGreen,
+    output Hsync,
+    output Vsync,
     output logic vga_busy
 );
 
@@ -75,9 +80,24 @@ module data_flow
                    VGA GOES HERE
     ********************************************/
     // TODO Fix
-    assign x_display = x_bresenham;
-    assign y_display = y_bresenham;
-    assign vga_busy = 0;
+    logic [13:0] hCntr;
+    logic [13:0] vCntr;
+    logic [7:0] vga_in;
+    logic screanClk;
+    
+    assign x_display = hCntr[10:2];
+    assign y_display = vCntr[10:2];
+    
+    assign vga_in = (127 - occupancy_data);
+    
+    vga_driver vga (
+      .rgb_input({3{vga_in[7:4]}}),
+      .hCntr(hCntr),
+      .vCntr(vCntr),
+      .buzy(vga_busy),
+      .*
+    );
+    
     //*******************************************
 
     always_comb begin : IndicesMux

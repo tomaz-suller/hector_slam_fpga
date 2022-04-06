@@ -9,8 +9,11 @@ module hector_slam_fpga_tb;
 
     logic reset, start;
     integer memory_dumpfile;
+    
+    logic btnD = reset;
+    logic btnC = start;
 
-    hector_slam_fpga dut (.*);
+    hector_slam_fpga dut (.clock(clock), .btnD(btnD), .btnC(btnC));
 
     initial begin
         memory_dumpfile = $fopen("/tmp/memory_dump.txt", "w");
