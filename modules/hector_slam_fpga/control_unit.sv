@@ -4,6 +4,7 @@ module control_unit
     input logic start,
     output logic use_bresenham_indices,
     input logic scan_done,
+                simulation_done,
     // Bresenham
     output logic address_enable, address_reset,
                  position_enable,
@@ -11,7 +12,9 @@ module control_unit
     input logic bresenham_busy,
     // Occupancy grid
     output logic zero_occupancy_grid,
-    input logic occupancy_busy
+    input logic occupancy_busy,
+    // VGA
+    input logic vga_busy
 );
 
     typedef enum {
@@ -19,7 +22,8 @@ module control_unit
         WAIT_MEMORY_1, READ_POSITION,
         GET_NEXT_SCAN, WAIT_MEMORY_2,
         START_ALGORITHM,
-        WAIT_ALGORITMH
+        WAIT_ALGORITMH,
+        DRAW
     } state_t;
 
     state_t current, next;
@@ -43,7 +47,8 @@ module control_unit
             GET_NEXT_SCAN:
                 next = WAIT_MEMORY_2;
             WAIT_MEMORY_2:
-                if (scan_done) next = WAIT_MEMORY_1;
+                if (simulation_done) next = DRAW;
+                else if (scan_done) next = WAIT_MEMORY_1;
                 else next = START_ALGORITHM;
             START_ALGORITHM:
                 next = WAIT_ALGORITMH;
@@ -52,6 +57,9 @@ module control_unit
                     next = GET_NEXT_SCAN;
                 else next = WAIT_ALGORITMH;
             end
+            DRAW:
+                if (vga_busy) next = DRAW;
+                else next = WAIT;
             default:
                 next = RESET;
         endcase
@@ -81,6 +89,7 @@ module control_unit
                 bresenham_start = 1;
             WAIT_ALGORITMH:
                 use_bresenham_indices = 1;
+            // DRAW
             default: begin
                 address_enable = 0;
                 address_reset = 0;
@@ -90,6 +99,5 @@ module control_unit
             end
         endcase
     end
-
 
 endmodule: control_unit

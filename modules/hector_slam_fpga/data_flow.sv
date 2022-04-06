@@ -3,6 +3,7 @@ module data_flow
     input logic clock, reset,
     input logic use_bresenham_indices,
     output logic scan_done,
+                 simulation_done,
     // Bresenham
     input logic address_enable, address_reset,
                 position_enable,
@@ -10,7 +11,9 @@ module data_flow
     output logic bresenham_busy,
     // Occupancy grid
     input logic zero_occupancy_grid,
-    output logic occupancy_busy
+    output logic occupancy_busy,
+    // VGA
+    output logic vga_busy
 );
 
     logic [63:0] scan_data;
@@ -19,7 +22,6 @@ module data_flow
     logic [6:0] y_bresenham, y_display, y;
     logic cell_is_free, bresenham_we;
 
-    integer completed_scans;
     logic [31:0] lidar_x, lidar_y;
     logic [31:0] magnitude, angle;
 
@@ -31,12 +33,14 @@ module data_flow
         else if (address_enable) scan_address += 1;
     end
 
+    logic [3:0] completed_scans;
     always_ff @( posedge(clock), posedge(address_reset) ) begin : CompletedScans
         if (address_reset) completed_scans = 1;
         else if (scan_address == completed_scans * 721)
             completed_scans += 1;
     end
     assign scan_done = (scan_address == completed_scans * 721);
+    assign simulation_done = (completed_scans == 11);
 
     scan_memory scans (
         .address(scan_address),
@@ -67,10 +71,14 @@ module data_flow
         .*
     );
 
+    /********************************************
+                   VGA GOES HERE
+    ********************************************/
     // TODO Fix
     assign x_display = x_bresenham;
     assign y_display = y_bresenham;
-    //
+    assign vga_busy = 0;
+    //*******************************************
 
     always_comb begin : IndicesMux
         if (use_bresenham_indices) begin

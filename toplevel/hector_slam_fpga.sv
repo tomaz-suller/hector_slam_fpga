@@ -5,13 +5,14 @@ module hector_slam_fpga
 );
 
     logic use_bresenham_indices,
-          scan_done,
+          scan_done, simulation_done,
           address_enable, address_reset,
           position_enable,
           bresenham_start,
           bresenham_busy,
           zero_occupancy_grid,
-          occupancy_busy;
+          occupancy_busy,
+          vga_busy;
 
     control_unit cu (.*);
     data_flow df (.*);
