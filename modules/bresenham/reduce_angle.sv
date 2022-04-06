@@ -9,8 +9,8 @@ module reduce_angle
 );
 
     logic [31:0] first_stage_result,
-            second_stage_result,
-            third_stage_result;
+                 second_stage_result,
+                 third_stage_result;
 
     always_comb begin : YStage
         if (angle >= PI) begin
@@ -36,13 +36,18 @@ module reduce_angle
 
     always_comb begin : IdentityStage
         if (second_stage_result >= PI>>2) begin
-            reduced_angle = (PI>>1) - second_stage_result;
+            third_stage_result = (PI>>1) - second_stage_result;
             flip_identity = 1;
         end
         else begin
-            reduced_angle = second_stage_result;
+            third_stage_result = second_stage_result;
             flip_identity = 0;
         end
+    end
+
+    always_comb begin : ReducedAngleMux
+        if (third_stage_result[31]) reduced_angle = 0;
+        else reduced_angle = third_stage_result;
     end
 
 endmodule: reduce_angle
