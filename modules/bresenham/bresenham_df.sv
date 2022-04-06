@@ -31,7 +31,6 @@ module bresenham_df
         .out(tan_value)
     );
 
-
     fixed_multiplication x_world_mul (
         .a(magnitude),
         .b(cos_value),
