@@ -18,12 +18,12 @@ module control_unit
 );
 
     typedef enum {
-        RESET, WAIT,
+        RESET,
+        DRAW,
         WAIT_MEMORY_1, READ_POSITION,
         GET_NEXT_SCAN, WAIT_MEMORY_2,
         START_ALGORITHM,
-        WAIT_ALGORITMH,
-        DRAW
+        WAIT_ALGORITMH
     } state_t;
 
     state_t current, next;
@@ -32,14 +32,21 @@ module control_unit
         if (reset) current = RESET;
         else current = next;
     end
+    
+    logic [1:0] start_history;
+    always_ff @( posedge(clock)) begin : BordDetector
+        start_history = {start_history[0], start};
+    end
+    logic start_edge = start_history == 2'b01;
 
     always_comb begin : NextState
         case (current)
             RESET:
-                next = WAIT;
-            WAIT:
-                if (start && !occupancy_busy) next = WAIT_MEMORY_1;
-                else next = WAIT;
+                next = DRAW;
+            DRAW:
+                if (start_edge && !occupancy_busy)
+                    next = WAIT_MEMORY_1;
+                else next = DRAW;
             WAIT_MEMORY_1:
                 next = READ_POSITION;
             READ_POSITION:
@@ -47,8 +54,7 @@ module control_unit
             GET_NEXT_SCAN:
                 next = WAIT_MEMORY_2;
             WAIT_MEMORY_2:
-                if (simulation_done) next = DRAW;
-                else if (scan_done) next = WAIT_MEMORY_1;
+                if (scan_done || simulation_done) next = DRAW;
                 else next = START_ALGORITHM;
             START_ALGORITHM:
                 next = WAIT_ALGORITMH;
@@ -57,9 +63,6 @@ module control_unit
                     next = GET_NEXT_SCAN;
                 else next = WAIT_ALGORITMH;
             end
-            DRAW:
-                if (vga_busy) next = DRAW;
-                else next = DRAW;
             default:
                 next = RESET;
         endcase
@@ -78,7 +81,7 @@ module control_unit
                 address_reset = 1;
                 zero_occupancy_grid = 1;
             end
-            // WAIT
+            // DRAW
             // WAIT_MEMORY_1
             READ_POSITION:
                 position_enable = 1;
@@ -89,7 +92,6 @@ module control_unit
                 bresenham_start = 1;
             WAIT_ALGORITMH:
                 use_bresenham_indices = 1;
-            // DRAW
             default: begin
                 address_enable = 0;
                 address_reset = 0;
