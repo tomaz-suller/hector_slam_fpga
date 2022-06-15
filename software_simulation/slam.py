@@ -5,7 +5,8 @@ import numpy as np
 from numpy import append, pi, sin, cos, tan
 from PIL import Image, ImageDraw, ImageColor
 
-ENV_MAP_SCALE = 5
+ENV_MAP_SCALE = 1
+PADDING = 100
 
 def imshow(arr, vmin=None, vmax=None):
     if vmin is None:
@@ -20,19 +21,19 @@ def lidar(xi, env, n_measures=360, use_inf=False):
     size_max = max(size_x, size_y)
     acc = []
     for theta in np.linspace(0, 2*pi, n_measures):
-        theta += psi 
+        theta += psi
         measure = np.array([np.Inf if use_inf else size_max, theta])
         for rho in range(1, size_max+1):
             check_px = math.ceil(sensor_px + rho*cos(theta))
             check_py = math.ceil(sensor_py + rho*sin(theta))
-            if (0 < check_px <= size_x and 
-                    0 < check_py <= size_y and 
-                    not env[check_py, check_px]):
+            if (0 < check_px < size_x and
+                    0 < check_py < size_y and
+                    not int(env[check_py, check_px])):
                 measure = np.array([rho-1, theta])
                 break
         acc.append(measure)
     return acc
-     
+
 def reduce_octant_arg(theta):
     y_flip = False
     x_flip = False
@@ -92,7 +93,7 @@ def draw_lidar(xi, lidar_measures, env, draw_env=True, draw_scan=True):
         im = Image.fromarray(env*255)
     else:
         im = Image.fromarray(np.ones_like(env)*255)
-    
+
     draw = ImageDraw.Draw(im)
 
     if draw_scan:
@@ -102,7 +103,7 @@ def draw_lidar(xi, lidar_measures, env, draw_env=True, draw_scan=True):
             draw.line((px, py, *intersection), fill=(128, 128, 128))
             draw.ellipse((intersection[0]-READING_RADIUS/2, intersection[1]-READING_RADIUS/2, intersection[0]+READING_RADIUS/2, intersection[1]+READING_RADIUS/2),
                           fill=(0, 255, 0))
-    
+
     return im
 
 def in_matrix(point, matrix):
@@ -180,7 +181,7 @@ def dsi_xi(xi, si):
     rho, theta = si
     si_x = rho*cos(theta)
     si_y = rho*sin(theta)
-    
+
     return np.array([
         [1, 0, -sin(psi)*si_x - cos(psi)*si_y],
         [0, 1,  cos(psi)*si_x - sin(psi)*si_y]
@@ -226,7 +227,7 @@ def scan_match(xi_estimation, S, M):
         H[1, 1] += dy**2
         H[1, 2] += dy * dphi
         H[2, 2] += dphi**2
-    
+
     H[1, 0] = H[0, 1]
     H[2, 0] = H[0, 2]
     H[2, 1] = H[1, 2]
@@ -241,26 +242,25 @@ def scan_match(xi_estimation, S, M):
 
 def world2map(p):
     return p/ENV_MAP_SCALE
-    
+
 def map2world(p):
     return p*ENV_MAP_SCALE
 
 def main():
-    env_img = plt.imread("software_simulation/'-'.png")
+    env_img = plt.imread("software_simulation/mapa.png")
     env_img = env_img[:, :, :3] # remove alpha channel
     env = 0.9 < np.linalg.norm(env_img, axis=2)
     env_shape = env.shape
-    M = np.zeros((env_shape[0]//ENV_MAP_SCALE, env_shape[1]//ENV_MAP_SCALE))
-    xi = np.array([256, 256, 0.0]) # pos_x, pos_y, θ
+    M = np.zeros((env_shape[0]//ENV_MAP_SCALE+PADDING, env_shape[1]//ENV_MAP_SCALE+PADDING))
+    xi = np.array([env_shape[0]//2, env_shape[1]//2, 0.0]) # pos_x, pos_y, θ
     xi_moves = [np.array([15, 5, 0]),
                 np.array([5, 10, 0]),
                 np.array([10, -5, 0]),
-                np.array([20, 10, 0]),
-                ]
+                np.array([20, 10, 0])]
 
     S = lidar(xi, env, 720, use_inf=False)
     S_map = [np.array([world2map(si[0]), si[1]]) for si in S]
-    xi_map = np.array([world2map(xi[0]), world2map(xi[1]), xi[2]])   
+    xi_map = np.array([world2map(xi[0]), world2map(xi[1]), xi[2]])
     update_map(xi_map, S_map, M)
     draw_map(M)
     plt.show()
@@ -270,15 +270,18 @@ def main():
         xi += move
         S = lidar(xi, env, 720, use_inf=False)
         S_map = [np.array([world2map(si[0]), si[1]]) for si in S]
-        # for _ in range(10):
-        #     xi_map_estimation = np.array([world2map(xi_estimation[0]), world2map(xi_estimation[1]), xi_estimation[2]])
-        #     delta_xi_estimation = scan_match(xi_map_estimation, S_map, M).reshape(-1)
-        #     xi_estimation += delta_xi_estimation
-        # print(move/delta_xi_estimation)
-        update_map(xi, S_map, M)
+        for _ in range(10):
+            print(xi_estimation)
+            xi_map_estimation = np.array([world2map(xi_estimation[0]), world2map(xi_estimation[1]), xi_estimation[2]])
+            delta_xi_estimation = scan_match(xi_map_estimation, S_map, M).reshape(-1)
+            xi_estimation += delta_xi_estimation
+        print(move/xi_estimation)
+        xi_map = np.array([world2map(xi[0]), world2map(xi[1]), xi[2]])
+        update_map(xi_map, S_map, M)
         # draw_lidar(xi, S, env, draw_env=False)
         draw_map(M)
         plt.show()
 
 if __name__ == '__main__':
     main()
+
