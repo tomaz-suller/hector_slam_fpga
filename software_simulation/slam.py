@@ -6,7 +6,7 @@ from numpy import append, pi, sin, cos, tan
 from PIL import Image, ImageDraw, ImageColor
 
 ENV_MAP_SCALE = 1
-PADDING = 100
+PADDING = 2000
 
 def imshow(arr, vmin=None, vmax=None):
     if vmin is None:
@@ -37,7 +37,7 @@ def lidar(xi, env, n_measures=360, use_inf=False):
 def reduce_octant_arg(theta):
     y_flip = False
     x_flip = False
-    id_flip = False # refleccao em relacao a identidade
+    id_flip = False # reflexao em relacao a identidade
 
     reduced_theta = theta
     if reduced_theta >= np.pi:
@@ -236,15 +236,21 @@ def scan_match(xi_estimation, S, M):
         delta_pose = np.matmul(np.linalg.inv(H), dTr)
         delta_pose[2, 0] = min(delta_pose[2, 0], 0.2)
         delta_pose[2, 0] = max(delta_pose[2, 0], -0.2)
-        return np.array([map2world(delta_pose[0,0]), map2world(delta_pose[1,0]), delta_pose[2, 0]])
+        return np.array([map_to_world(delta_pose[0,0]), map_to_world(delta_pose[1,0]), delta_pose[2, 0]])
     else:
         return np.zeros(3)
 
-def world2map(p):
-    return p/ENV_MAP_SCALE
+def world_length_to_map(length: float) -> float:
+    return length / ENV_MAP_SCALE
 
-def map2world(p):
-    return p*ENV_MAP_SCALE
+def map_length_to_world(length: float) -> float:
+    return length * ENV_MAP_SCALE
+
+def world_to_map(cartesian_coordinate: float) -> float:
+    return world_length_to_map(cartesian_coordinate) + PADDING/2
+
+def map_to_world(cartesian_coordinate: float) -> float:
+    return map_length_to_world(cartesian_coordinate - PADDING/2)
 
 def main():
     env_img = plt.imread("software_simulation/mapa.png")
@@ -252,6 +258,7 @@ def main():
     env = 0.9 < np.linalg.norm(env_img, axis=2)
     env_shape = env.shape
     M = np.zeros((env_shape[0]//ENV_MAP_SCALE+PADDING, env_shape[1]//ENV_MAP_SCALE+PADDING))
+    print(env_shape, M.shape)
     xi = np.array([env_shape[0]//2, env_shape[1]//2, 0.0]) # pos_x, pos_y, θ
     xi_moves = [np.array([15, 5, 0]),
                 np.array([5, 10, 0]),
@@ -259,8 +266,8 @@ def main():
                 np.array([20, 10, 0])]
 
     S = lidar(xi, env, 720, use_inf=False)
-    S_map = [np.array([world2map(si[0]), si[1]]) for si in S]
-    xi_map = np.array([world2map(xi[0]), world2map(xi[1]), xi[2]])
+    S_map = [np.array([world_length_to_map(si[0]), si[1]]) for si in S]
+    xi_map = np.array([world_to_map(xi[0]), world_to_map(xi[1]), xi[2]])
     update_map(xi_map, S_map, M)
     draw_map(M)
     plt.show()
@@ -269,19 +276,18 @@ def main():
     for move in xi_moves:
         xi += move
         S = lidar(xi, env, 720, use_inf=False)
-        S_map = [np.array([world2map(si[0]), si[1]]) for si in S]
+        S_map = [np.array([world_length_to_map(si[0]), si[1]]) for si in S]
         for _ in range(10):
             print(xi_estimation)
-            xi_map_estimation = np.array([world2map(xi_estimation[0]), world2map(xi_estimation[1]), xi_estimation[2]])
+            xi_map_estimation = np.array([world_to_map(xi_estimation[0]), world_to_map(xi_estimation[1]), xi_estimation[2]])
             delta_xi_estimation = scan_match(xi_map_estimation, S_map, M).reshape(-1)
             xi_estimation += delta_xi_estimation
         print(move/xi_estimation)
-        xi_map = np.array([world2map(xi[0]), world2map(xi[1]), xi[2]])
+        xi_map = np.array([world_to_map(xi[0]), world_to_map(xi[1]), xi[2]])
         update_map(xi_map, S_map, M)
         # draw_lidar(xi, S, env, draw_env=False)
-        draw_map(M)
-        plt.show()
+    draw_map(M)
+    plt.show()
 
 if __name__ == '__main__':
     main()
-
